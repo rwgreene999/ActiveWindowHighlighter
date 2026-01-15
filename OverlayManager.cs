@@ -2,6 +2,7 @@ using System;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Threading;
+using System.Windows.Interop;
 using MediaColor = System.Windows.Media.Color;
 
 namespace ActiveWindowHighlighter
@@ -12,6 +13,13 @@ namespace ActiveWindowHighlighter
         private readonly Dispatcher _dispatcher;
         private IntPtr _hook = IntPtr.Zero;
         private WinEventDelegate? _callback;
+
+        // WinEvent constants
+        private const uint EVENT_SYSTEM_FOREGROUND = 0x0003;
+        private const uint EVENT_OBJECT_LOCATIONCHANGE = 0x800B;
+        private const int OBJID_WINDOW = 0;
+        private const uint WINEVENT_OUTOFCONTEXT = 0x0000;
+        private const uint WINEVENT_SKIPOWNPROCESS = 0x0002;
 
         public MediaColor BorderColor { get; set; } = MediaColor.FromRgb(255, 80, 0);
         public double BorderThickness { get; set; } = 3;
@@ -28,7 +36,8 @@ namespace ActiveWindowHighlighter
             _overlay.Hide();
 
             _callback = WinEventProc;
-            _hook = SetWinEventHook(3, 3, IntPtr.Zero, _callback, 0, 0, 0x0000 | 0x0002);
+            // Listen for foreground changes and for location changes (size/move)
+            _hook = SetWinEventHook(EVENT_SYSTEM_FOREGROUND, EVENT_OBJECT_LOCATIONCHANGE, IntPtr.Zero, _callback, 0, 0, WINEVENT_OUTOFCONTEXT | WINEVENT_SKIPOWNPROCESS);
         }
 
         public void Stop()
@@ -43,10 +52,19 @@ namespace ActiveWindowHighlighter
 
         private void WinEventProc(IntPtr h, uint e, IntPtr hwnd, int obj, int child, uint t, uint ms)
         {
-            if (e != 3 || hwnd == IntPtr.Zero)
+            if (hwnd == IntPtr.Zero)
                 return;
 
-            _dispatcher.InvokeAsync(() => Update(hwnd));
+            // Ignore events coming from the overlay window itself
+            var overlayHwnd = new WindowInteropHelper(_overlay).Handle;
+            if (overlayHwnd != IntPtr.Zero && hwnd == overlayHwnd)
+                return;
+
+            // Only handle foreground changes or top-level window location changes
+            if (e == EVENT_SYSTEM_FOREGROUND || (e == EVENT_OBJECT_LOCATIONCHANGE && obj == OBJID_WINDOW))
+            {
+                _dispatcher.InvokeAsync(() => Update(hwnd));
+            }
         }
 
         private void Update(IntPtr hwnd)
