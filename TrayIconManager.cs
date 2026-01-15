@@ -1,4 +1,5 @@
 using System;
+using System.Reflection;
 using System.Windows.Media;
 
 namespace ActiveWindowHighlighter
@@ -8,6 +9,8 @@ namespace ActiveWindowHighlighter
         private readonly OverlayManager _overlayManager;
         private System.Windows.Forms.NotifyIcon? _notifyIcon;
         private bool _enabled = true;
+        private bool _ownsIcon;
+        private System.Drawing.Icon? _trayIcon;
 
         public TrayIconManager(OverlayManager overlayManager)
         {
@@ -16,9 +19,28 @@ namespace ActiveWindowHighlighter
 
         public void Initialize()
         {
+            var exePath = Assembly.GetEntryAssembly()?.Location;
+            if (!string.IsNullOrEmpty(exePath))
+            {
+                try
+                {
+                    _trayIcon = System.Drawing.Icon.ExtractAssociatedIcon(exePath);
+                    _ownsIcon = true;
+                }
+                catch
+                {
+                    _trayIcon = System.Drawing.SystemIcons.Information;
+                    _ownsIcon = false;
+                }
+            }
+            else
+            {
+                _trayIcon = System.Drawing.SystemIcons.Information;
+                _ownsIcon = false;
+            }
             _notifyIcon = new System.Windows.Forms.NotifyIcon
             {
-                Icon = System.Drawing.SystemIcons.Information,
+                Icon = _trayIcon,
                 Visible = true,
                 Text = "Active Window Highlighter",
                 ContextMenuStrip = BuildContextMenu()
@@ -108,6 +130,13 @@ namespace ActiveWindowHighlighter
 
         public void Dispose()
         {
+            if (_trayIcon != null && _ownsIcon)
+            {
+                _trayIcon.Dispose();
+                _trayIcon = null;
+                _ownsIcon = false;
+            }
+
             if (_notifyIcon != null)
             {
                 _notifyIcon.Visible = false;

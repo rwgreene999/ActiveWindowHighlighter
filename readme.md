@@ -37,7 +37,8 @@ Maybe this is not an issue for most people, but it is something I noticed I had 
 * todo: Provide option for adding to Windows Startup   
 
 # Dones: 
-* BUG: FollowMovedWindows Notice when the focused window moves and relocate the highlight
+* 1/15/25 BUG: FollowMovedWindows Notice when the focused window moves and relocate the highlight
+* 1/15/25 Better tray icon 
 
 
 
