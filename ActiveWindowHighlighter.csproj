@@ -14,7 +14,12 @@
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
     <PublishTrimmed>false</PublishTrimmed>
+    <ApplicationIcon>icon2.ico</ApplicationIcon>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="icon2.ico" />
+  </ItemGroup>
 
   <!-- REMOVE the old <Reference Include="System.Windows.Forms" /> and System.Drawing here.
        They are not needed and can cause confusion in SDK-style projects. -->
